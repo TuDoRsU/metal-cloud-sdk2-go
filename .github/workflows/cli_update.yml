@@ -21,7 +21,7 @@ jobs:
 
       - name: Clone metalsoft-cli
         run: |
-          git clone https://github.com/metalsoft-io/metalcloud-cli
+          git clone https://github.com/TuDoRsU/metalcloud-cli
           cd metalcloud-cli
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -44,7 +44,7 @@ jobs:
         working-directory: metalsoft-cli
         run: |
           # Update the module dependency version
-          go get github.com/metalsoft-io/metal-cloud-sdk2-go@${{ env.VERSION }}
+          go get github.com/TuDoRsU/metal-cloud-sdk2-go@${{ env.VERSION }}
 
           # Verify if go.mod is updated
           if ! git diff --exit-code go.mod go.sum; then
