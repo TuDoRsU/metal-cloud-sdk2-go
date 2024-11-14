@@ -1,0 +1,74 @@
+name: Update metalsoft-cli
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  update-dependency:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sdk
+        uses: actions/checkout@v3
+
+      - name: Extract Version from Tag
+        id: extract_version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Clone metalsoft-cli
+        run: |
+          git clone https://github.com/metalsoft-io/metalcloud-cli
+          cd metalcloud-cli
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check for Existing Pull Requests
+        env:
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          # Check if a pull request already exists for a previous version update
+          gh auth login --with-token <<< "$REPO_TOKEN"
+          PR_URL=$(gh pr list --state open --head "update-library-to-*" --json url --jq '.[0].url')
+          if [[ -n "$PR_URL" ]]; then
+            echo "Existing PR found: $PR_URL. Closing it..."
+            gh pr close "$PR_URL" --delete-branch
+          else
+            echo "No existing update PR found."
+          fi
+
+      - name: Update Go Dependency Version
+        working-directory: metalsoft-cli
+        run: |
+          # Update the module dependency version
+          go get github.com/metalsoft-io/metal-cloud-sdk2-go@${{ env.VERSION }}
+
+          # Verify if go.mod is updated
+          if ! git diff --exit-code go.mod go.sum; then
+            # If changes are detected, commit the update
+            git add go.mod go.sum
+            git commit -m "Update library to version ${{ env.VERSION }}"
+          else
+            echo "No changes in go.mod; skipping commit."
+          fi
+
+      - name: Push Changes and Create Pull Request
+        if: success() && steps.update-dependency.outcome == 'success'
+        env:
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          cd metalcloud-cli
+
+          # Create a new branch and push the changes
+          BRANCH_NAME="update-library-to-${{ env.VERSION }}"
+          git checkout -b $BRANCH_NAME
+          git push origin $BRANCH_NAME
+
+          # Create a new pull request
+          gh pr create --title "Update library to version ${{ env.VERSION }}" \
+                       --body "This PR updates the library to version ${{ env.VERSION }}" \
+                       --head "$BRANCH_NAME" \
+                       --base "main"
