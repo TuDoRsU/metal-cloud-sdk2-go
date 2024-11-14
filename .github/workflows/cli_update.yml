@@ -43,7 +43,7 @@ jobs:
       - name: Update Go Dependency Version
         run: |
           # Update the module dependency version
-          go get github.com/metalsoft-io/metal-cloud-sdk2-go@$v1.7.0
+          go get github.com/metalsoft-io/metal-cloud-sdk2-go@v1.7.0
 
           # Verify if go.mod is updated
           if ! git diff --exit-code go.mod go.sum; then
