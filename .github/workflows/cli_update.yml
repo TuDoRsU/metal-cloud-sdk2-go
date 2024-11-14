@@ -41,7 +41,6 @@ jobs:
           fi
 
       - name: Update Go Dependency Version
-        working-directory: metalsoft-cli
         run: |
           # Update the module dependency version
           go get github.com/TuDoRsU/metal-cloud-sdk2-go@${{ env.VERSION }}
